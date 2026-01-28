@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParabolaLab | Интерактивный Решатель</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #0f172a; --primary: #38bdf8; --text: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .solver-card { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .inputs { display: flex; gap: 10px; align-items: center; margin: 20px 0; flex-wrap: wrap; }
+        input { background: #334155; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; width: 60px; font-size: 1.2rem; text-align: center; }
+        .result-box { background: #0f172a; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid var(--primary); }
+        canvas { margin-top: 30px; background: rgba(255,255,255,0.02); border-radius: 10px; }
+        .back-link { color: var(--primary); text-decoration: none; display: inline-block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="solver-card">
+    <a href="index2.html" class="back-link">← Вернуться к теории</a>
+    <h2>Решение квадратного уравнения</h2>
+    <p>Введите коэффициенты для уравнения $ax^2 + bx + c = 0$</p>
+
+    <div class="inputs">
+        <input type="number" id="a" value="1"> <span>x² +</span>
+        <input type="number" id="b" value="2"> <span>x +</span>
+        <input type="number" id="c" value="-3"> <span>= 0</span>
+        <button onclick="solve()" style="padding: 10px 20px; background: var(--primary); border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Решить</button>
+    </div>
+
+    <div id="results" class="result-box">
+        Здесь появятся расчеты...
+    </div>
+
+    <canvas id="chart"></canvas>
+</div>
+
+<script>
+    let chart;
+    function solve() {
+        const a = parseFloat(document.getElementById('a').value);
+        const b = parseFloat(document.getElementById('b').value);
+        const c = parseFloat(document.getElementById('c').value);
+        const resDiv = document.getElementById('results');
+
+        if (a === 0) {
+            resDiv.innerHTML = "Это не квадратное уравнение (a не может быть 0).";
+            return;
+        }
+
+        const D = b*b - 4*a*c;
+        let resultText = `Дискриминант D = ${D}<br>`;
+
+        if (D > 0) {
+            const x1 = (-b + Math.sqrt(D)) / (2*a);
+            const x2 = (-b - Math.sqrt(D)) / (2*a);
+            resultText += `Корни: x₁ = ${x1.toFixed(2)}, x₂ = ${x2.toFixed(2)}`;
+        } else if (D === 0) {
+            const x = -b / (2*a);
+            resultText += `Один корень: x = ${x.toFixed(2)}`;
+        } else {
+            resultText += "Действительных корней нет (график не пересекает ось X).";
+        }
+        resDiv.innerHTML = resultText;
+
+        drawGraph(a, b, c);
+    }
+
+    function drawGraph(a, b, c) {
+        const labels = [];
+        const data = [];
+        for (let x = -10; x <= 10; x += 0.5) {
+            labels.push(x);
+            data.push(a*x*x + b*x + c);
+        }
+
+        if (chart) chart.destroy();
+        const ctx = document.getElementById('chart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'f(x)',
+                    data: data,
+                    borderColor: '#38bdf8',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                scales: {
+                    y: { grid: { color: '#334155' } },
+                    x: { grid: { color: '#334155' } }
+                }
+            }
+        });
+    }
+
+    solve(); // Начальный расчет
+</script>
+</body>
+</html>
