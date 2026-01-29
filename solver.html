@@ -3,35 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ParabolaLab | Интерактивный Решатель</title>
+    <title>ParabolaLab | Live Solver</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0f172a; --primary: #38bdf8; --text: #f1f5f9; }
+        :root { --bg: #0f172a; --primary: #38bdf8; --text: #f1f5f9; --card: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .solver-card { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .solver-card { max-width: 800px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* Стили кнопки назад */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        .back-btn:hover { transform: translateX(-5px); }
+
         .inputs { display: flex; gap: 10px; align-items: center; margin: 20px 0; flex-wrap: wrap; }
-        input { background: #334155; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; width: 60px; font-size: 1.2rem; text-align: center; }
-        .result-box { background: #0f172a; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid var(--primary); }
+        input { background: #334155; border: 1px solid var(--primary); color: white; padding: 10px; border-radius: 8px; width: 80px; font-size: 1.2rem; text-align: center; outline: none; }
+        input:focus { box-shadow: 0 0 10px var(--primary); }
+        
+        .result-box { background: #0f172a; padding: 20px; border-radius: 12px; margin-top: 20px; border-left: 4px solid var(--primary); min-height: 60px; }
         canvas { margin-top: 30px; background: rgba(255,255,255,0.02); border-radius: 10px; }
-        .back-link { color: var(--primary); text-decoration: none; display: inline-block; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="solver-card">
-    <a href="index.html" class="back-link">← Вернуться к теории</a>
-    <h2>Решение квадратного уравнения</h2>
-    <p>Введите коэффициенты для уравнения $ax^2 + bx + c = 0$</p>
+    <a href="index.html" class="back-btn">← Вернуться к теории</a>
+
+    <h2>Интерактивная парабола</h2>
+    <p>Меняйте коэффициенты $a, b, c$ для мгновенного пересчета:</p>
 
     <div class="inputs">
-        <input type="number" id="a" value="1"> <span>x² +</span>
-        <input type="number" id="b" value="2"> <span>x +</span>
-        <input type="number" id="c" value="-3"> <span>= 0</span>
-        <button onclick="solve()" style="padding: 10px 20px; background: var(--primary); border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Решить</button>
+        <input type="number" id="a" value="1" step="0.5"> <span>x² +</span>
+        <input type="number" id="b" value="2" step="0.5"> <span>x +</span>
+        <input type="number" id="c" value="-3" step="0.5"> <span>= 0</span>
     </div>
 
     <div id="results" class="result-box">
-        Здесь появятся расчеты...
+        Введите коэффициенты...
     </div>
 
     <canvas id="chart"></canvas>
@@ -39,68 +54,102 @@
 
 <script>
     let chart;
+    const inputs = ['a', 'b', 'c'];
+
+    // Привязываем обновление к вводу в реальном времени
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', solve);
+    });
+
     function solve() {
-        const a = parseFloat(document.getElementById('a').value);
-        const b = parseFloat(document.getElementById('b').value);
-        const c = parseFloat(document.getElementById('c').value);
+        const a = parseFloat(document.getElementById('a').value) || 0;
+        const b = parseFloat(document.getElementById('b').value) || 0;
+        const c = parseFloat(document.getElementById('c').value) || 0;
         const resDiv = document.getElementById('results');
 
         if (a === 0) {
-            resDiv.innerHTML = "Это не квадратное уравнение (a не может быть 0).";
+            resDiv.innerHTML = "При $a = 0$ уравнение становится линейным. Введите значение для $a$.";
+            updateGraph(a, b, c);
             return;
         }
 
-        const D = b*b - 4*a*c;
-        let resultText = `Дискриминант D = ${D}<br>`;
+        const D = b * b - 4 * a * c;
+        let resultText = `<b>Дискриминант:</b> ${D.toFixed(2)}<br>`;
 
         if (D > 0) {
-            const x1 = (-b + Math.sqrt(D)) / (2*a);
-            const x2 = (-b - Math.sqrt(D)) / (2*a);
-            resultText += `Корни: x₁ = ${x1.toFixed(2)}, x₂ = ${x2.toFixed(2)}`;
+            const x1 = (-b + Math.sqrt(D)) / (2 * a);
+            const x2 = (-b - Math.sqrt(D)) / (2 * a);
+            resultText += `<b>Корни:</b> x₁ = ${x1.toFixed(2)}, x₂ = ${x2.toFixed(2)}`;
         } else if (D === 0) {
-            const x = -b / (2*a);
-            resultText += `Один корень: x = ${x.toFixed(2)}`;
+            const x = -b / (2 * a);
+            resultText += `<b>Один корень:</b> x = ${x.toFixed(2)}`;
         } else {
-            resultText += "Действительных корней нет (график не пересекает ось X).";
+            resultText += "<b>Корней нет:</b> парабола не пересекает ось X.";
         }
+        
         resDiv.innerHTML = resultText;
-
-        drawGraph(a, b, c);
+        updateGraph(a, b, c);
     }
 
-    function drawGraph(a, b, c) {
-        const labels = [];
-        const data = [];
-        for (let x = -10; x <= 10; x += 0.5) {
-            labels.push(x);
-            data.push(a*x*x + b*x + c);
+    function updateGraph(a, b, c) {
+        const points = [];
+        const xVertex = a !== 0 ? -b / (2 * a) : 0;
+        const range = 10; 
+
+        for (let x = xVertex - range; x <= xVertex + range; x += 0.2) {
+            points.push({ x: x, y: a * x * x + b * x + c });
         }
 
-        if (chart) chart.destroy();
+        if (chart) {
+            chart.data.datasets[0].data = points;
+            chart.update('none'); // Используем 'none' или 'active' для контроля плавности
+        } else {
+            initChart(points);
+        }
+    }
+
+    function initChart(initialData) {
         const ctx = document.getElementById('chart').getContext('2d');
         chart = new Chart(ctx, {
-            type: 'line',
+            type: 'scatter',
             data: {
-                labels: labels,
                 datasets: [{
-                    label: 'f(x)',
-                    data: data,
+                    label: 'f(x) = ax² + bx + c',
+                    data: initialData,
+                    showLine: true,
                     borderColor: '#38bdf8',
-                    borderWidth: 2,
+                    borderWidth: 3,
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
                     tension: 0.4,
                     pointRadius: 0
                 }]
             },
             options: {
+                responsive: true,
+                animation: {
+                    duration: 300,
+                    easing: 'linear'
+                },
                 scales: {
-                    y: { grid: { color: '#334155' } },
-                    x: { grid: { color: '#334155' } }
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
                 }
             }
         });
     }
 
-    solve(); // Начальный расчет
+    solve();
 </script>
 </body>
 </html>
